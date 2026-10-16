@@ -1,0 +1,68 @@
+{
+  "info": {
+    "name": "Employee API",
+    "_postman_id": "1cba9c5c-7b25-4e2e-8e3f-123456789abc",
+    "description": "Run in order against a freshly started in-memory API. Restarting the API restores seed data.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://127.0.0.1:8000" }
+  ],
+  "item": [
+    {
+      "name": "List all employees",
+      "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/employees" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('status is 200', function () { pm.response.to.have.status(200); });", "pm.test('seed data is present', function () { pm.expect(pm.response.json()).to.have.length(3); });"] } }]
+    },
+    {
+      "name": "Get existing employee",
+      "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/employees/1" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('status is 200', function () { pm.response.to.have.status(200); });", "pm.test('employee is Rahul Sharma', function () { pm.expect(pm.response.json().name).to.eql('Rahul Sharma'); });"] } }]
+    },
+    {
+      "name": "Get nonexistent employee",
+      "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/employees/999" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('status is 404', function () { pm.response.to.have.status(404); });", "pm.test('has consistent error body', function () { pm.expect(pm.response.json()).to.have.all.keys('error', 'detail'); });"] } }]
+    },
+    {
+      "name": "Create valid employee",
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Neha Singh\",\n  \"department\": \"Finance\"\n}" }, "url": "{{baseUrl}}/employees" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('status is 201', function () { pm.response.to.have.status(201); });", "pm.test('created employee is active', function () { pm.expect(pm.response.json().status).to.eql('Active'); });"] } }]
+    },
+    {
+      "name": "Reject empty name",
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"\",\n  \"department\": \"Finance\"\n}" }, "url": "{{baseUrl}}/employees" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('status is 4xx', function () { pm.expect(pm.response.code).to.be.within(400, 499); });", "pm.test('has error body', function () { pm.expect(pm.response.json()).to.have.all.keys('error', 'detail'); });"] } }]
+    },
+    {
+      "name": "Reject whitespace-only department",
+      "request": { "method": "POST", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"name\": \"Valid Name\",\n  \"department\": \"   \"\n}" }, "url": "{{baseUrl}}/employees" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('status is 4xx', function () { pm.expect(pm.response.code).to.be.within(400, 499); });"] } }]
+    },
+    {
+      "name": "Filter by department",
+      "request": { "method": "GET", "header": [], "url": "{{baseUrl}}/employees?department=Engineering" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('status is 200', function () { pm.response.to.have.status(200); });", "pm.test('engineering IDs are 1 and 3', function () { pm.expect(pm.response.json().map(function (e) { return e.id; })).to.eql([1, 3]); });"] } }]
+    },
+    {
+      "name": "PATCH status to Inactive",
+      "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"status\": \"Inactive\"\n}" }, "url": "{{baseUrl}}/employees/1/status" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('status is 200', function () { pm.response.to.have.status(200); });", "pm.test('employee is inactive', function () { pm.expect(pm.response.json().status).to.eql('Inactive'); });"] } }]
+    },
+    {
+      "name": "PATCH status to Active",
+      "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"status\": \"Active\"\n}" }, "url": "{{baseUrl}}/employees/1/status" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('status is 200', function () { pm.response.to.have.status(200); });", "pm.test('employee is active', function () { pm.expect(pm.response.json().status).to.eql('Active'); });"] } }]
+    },
+    {
+      "name": "PATCH invalid status",
+      "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"status\": \"active\"\n}" }, "url": "{{baseUrl}}/employees/1/status" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('status is 4xx', function () { pm.expect(pm.response.code).to.be.within(400, 499); });", "pm.test('has error body', function () { pm.expect(pm.response.json()).to.have.all.keys('error', 'detail'); });"] } }]
+    },
+    {
+      "name": "PATCH nonexistent ID",
+      "request": { "method": "PATCH", "header": [{ "key": "Content-Type", "value": "application/json" }], "body": { "mode": "raw", "raw": "{\n  \"status\": \"Active\"\n}" }, "url": "{{baseUrl}}/employees/999/status" },
+      "event": [{ "listen": "test", "script": { "exec": ["pm.test('status is 404', function () { pm.response.to.have.status(404); });", "pm.test('has error body', function () { pm.expect(pm.response.json()).to.have.all.keys('error', 'detail'); });"] } }]
+    }
+  ]
+}
